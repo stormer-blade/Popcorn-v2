@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, redirect, session
+from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = "gsavdVsagdvdfgj"
@@ -20,8 +21,8 @@ def login():
             if f"{name.title()} {roll} {password}" == data[i]:
                 session["username"] = name.title()
                 return redirect("home")
-    except:
-        pass
+    except Exception as e:
+        print("LOGIN ERROR:", e)
     return render_template("login.html")
 
 
@@ -30,27 +31,30 @@ def home():
     message = request.form.get("message")
     name = session.get("username")
     you = []
+    youi = []
     others = []
+    timestamp = str(datetime.now()).split()
+    print(timestamp)
     print(message)
     if message != None:
-        with open("chat.txt", "a") as file:
-            chats = file.write(f"{name} {message}\n")
-    with open("chat.txt", "r") as file:
+        with open("chat.csv", "a") as file:
+            ts = str(timestamp).replace(",","")
+            print(ts)
+            chats = file.write(f"{name},{message},{ts}\n")
+    with open("chat.csv", "r") as file:
         chats = file.read().splitlines()
     for i in range(len(chats)):
-        chat = chats[i]
-        for x in range(len(chat)):
-            if chat[x] == " ":
-                chat = [chat[0:int(x)], f"{chat[int(x+1): -1]}{chat[-1]}"]
-                break
-        try:
-            if chat[0].lower() == name.lower():
-                you.append([chat, i])
-            else:
-                others.append([chat, i])
-        except:
-            pass
-    return render_template("main.html", you=you, others=others, lenght=range(len(chats)))
+        chats[i] = chats[i].split(",")
+    print(chats)
+    
+    chats.sort(key=get_time)
+    print(chats)
+    return render_template("main.html", lenght=range(len(chats)), chats=chats, name=name)
+
+def get_time(msg):
+    return datetime.strptime(
+        msg[2], "['%Y-%m-%d' '%H:%M:%S.%f']"
+    )
 
 if __name__ == "__main__":
     app.run(debug=True, port=8080)
